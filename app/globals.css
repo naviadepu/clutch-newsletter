@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #f6efe3;
+  --paper-deep: #efe5d2;
+  --softpink: #f4c9d6;
+  --bubblegum: #eb6e9e;
+  --hot: #d6336c;
+  --chocolate: #4a2a1a;
+  --ink: #1b1b1b;
+  --dusty: #c9d6e2;
+}
+
+html,
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Paper grain — layered SVG noise + warm wash */
+.paper-bg {
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(
+      ellipse at 20% 0%,
+      rgba(244, 201, 214, 0.45) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse at 90% 100%,
+      rgba(201, 214, 226, 0.35) 0%,
+      transparent 55%
+    ),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.29  0 0 0 0 0.16  0 0 0 0 0.10  0 0 0 0.10 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: auto, auto, 220px 220px;
+}
+
+.paper-card {
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.29  0 0 0 0 0.16  0 0 0 0 0.10  0 0 0 0.07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+}
+
+/* Halftone dot pattern */
+.halftone {
+  background-image: radial-gradient(
+    var(--softpink) 22%,
+    transparent 23%
+  );
+  background-size: 6px 6px;
+}
+
+.halftone-pink {
+  background-image: radial-gradient(
+    rgba(214, 51, 108, 0.7) 22%,
+    transparent 23%
+  );
+  background-size: 5px 5px;
+}
+
+/* Distressed text effect — tiny shadow split */
+.distressed {
+  text-shadow:
+    0.5px 0 0 rgba(214, 51, 108, 0.18),
+    -0.5px 0 0 rgba(74, 42, 26, 0.12);
+}
+
+/* Vertical EXTRA marquee */
+@keyframes slide-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: slide-left 30s linear infinite;
+}
+
+/* Subtle rotate utilities for taped-down feel */
+.rot-1 {
+  transform: rotate(-1.2deg);
+}
+.rot-2 {
+  transform: rotate(1.6deg);
+}
+.rot-3 {
+  transform: rotate(-2.4deg);
+}
+.rot-4 {
+  transform: rotate(2.8deg);
+}
+
+/* Newspaper columns */
+.newspaper-2col {
+  column-count: 2;
+  column-gap: 1.75rem;
+  column-rule: 1px dotted rgba(74, 42, 26, 0.3);
+}
+.newspaper-3col {
+  column-count: 3;
+  column-gap: 1.5rem;
+  column-rule: 1px dotted rgba(74, 42, 26, 0.25);
+}
+@media (max-width: 640px) {
+  .newspaper-2col,
+  .newspaper-3col {
+    column-count: 1;
+  }
+}
+
+/* Drop cap */
+.dropcap::first-letter {
+  font-family: var(--font-playfair), serif;
+  font-style: italic;
+  font-size: 3.4em;
+  line-height: 0.85;
+  float: left;
+  padding: 0.18em 0.12em 0 0;
+  color: var(--hot);
+}
+
+/* Cutline (dashed scissor) */
+.cutline {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--chocolate) 0 6px,
+    transparent 6px 14px
+  );
+  background-size: 100% 1px;
+  background-position: 0 50%;
+  background-repeat: no-repeat;
+}
+
+/* Newspaper rule — thick + thin classic */
+.classic-rule {
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  height: 6px;
+}
+
+/* Underline that looks hand-drawn */
+.handline {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 8' preserveAspectRatio='none'><path d='M2 5 Q 50 1 100 4 T 198 3' stroke='%23D6336C' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 6px;
+  padding-bottom: 4px;
+}
+
+/* Pixel cursor — used by Paint window */
+.pixel-cursor {
+  image-rendering: pixelated;
+}
+
+/* Selection */
+::selection {
+  background: var(--bubblegum);
+  color: white;
+}
+
+/* ============ Pivot reading effects ============ */
+
+/* Highlighter swipe — pink band that sweeps left-to-right when paragraph is hovered.
+   box-decoration-break: clone repeats the band per visual line. */
+.read-mark {
+  background-image: linear-gradient(
+    transparent 58%,
+    rgba(244, 201, 214, 0.85) 58%,
+    rgba(244, 201, 214, 0.85) 92%,
+    transparent 92%
+  );
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+  background-position: 0 0;
+  transition: background-size 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.read-paragraph:hover .read-mark,
+.read-paragraph:focus-within .read-mark,
+.read-mark.is-read {
+  background-size: 100% 100%;
+}
+
+.read-paragraph {
+  cursor: none;
+}
+
+/* Static pink highlighter mark — for iconic phrases */
+.lit {
+  background-image: linear-gradient(
+    transparent 58%,
+    rgba(244, 201, 214, 0.85) 58%,
+    rgba(244, 201, 214, 0.85) 92%,
+    transparent 92%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0 2px;
+}
+
+/* Circled / ringed phrase, hand-drawn */
+.ringed {
+  position: relative;
+  white-space: nowrap;
+  padding: 0 6px;
+}
+.ringed::before {
+  content: "";
+  position: absolute;
+  inset: -4px -2px -2px -2px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 60' preserveAspectRatio='none'><path d='M10 30 Q 20 8 100 8 Q 180 8 192 30 Q 192 52 100 52 Q 8 52 10 30 Z' stroke='%23D6336C' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+/* Pencil cursor wrapper — follows mouse, hidden by default */
+.pencil-cursor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 40;
+  transform: translate(-2px, -28px) rotate(-22deg);
+  filter: drop-shadow(1px 2px 1px rgba(74, 42, 26, 0.35));
+  transition: opacity 120ms ease-out;
+}
+
+/* ============ Round-2 motion system ============ */
+
+@keyframes heart-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+.heart-pulse {
+  transform-origin: center;
+  animation: heart-pulse 1s ease-in-out infinite;
+}
+
+@keyframes sparkle-spin {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0.4;
+  }
+}
+.sparkle-spin {
+  transform-origin: center;
+  animation: sparkle-spin 2s linear infinite;
+}
+
+@keyframes tile-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(3px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+.tile-shake {
+  animation: tile-shake 150ms ease-in-out;
+}
+
+/* Flip-card scaffolding */
+.flip-scene {
+  perspective: 1200px;
+}
+.flip-card {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+/* Card-fan / deck */
+.deck-card-base {
+  transform-origin: 50% 100%;
+  transition: transform 220ms ease-out, box-shadow 220ms ease-out;
+}
+.deck-card-base:hover,
+.deck-card-base:focus-visible {
+  transform: translateY(-14px) rotate(0deg) !important;
+  box-shadow: 4px 8px 0 rgba(27, 27, 27, 0.18);
+  z-index: 50;
+}
