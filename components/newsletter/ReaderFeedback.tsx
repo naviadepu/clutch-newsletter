@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PixelHeart,
@@ -8,7 +8,6 @@ import {
   FourPointStar,
   Scissors,
 } from "./decorations";
-import OutfitOfTheDay, { OOTD_ITEMS } from "./OutfitOfTheDay";
 
 const STORAGE_KEY = "clutch_feedback_2026_05";
 
@@ -132,7 +131,6 @@ function MadLibBlank({
 
 export default function ReaderFeedback() {
   const [state, setState] = useState<State>(INITIAL);
-  const [ootdPick, setOotdPick] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [burst, setBurst] = useState(false);
   const hydrated = useRef(false);
@@ -172,10 +170,6 @@ export default function ReaderFeedback() {
 
   const loggedCount = Object.values(state.takes).filter(Boolean).length;
 
-  const handleOotdPick = useCallback((picks: string[]) => {
-    setOotdPick(picks[0] ?? null);
-  }, []);
-
   const handleSubmit = async () => {
     if (submitted) return;
     setBurst(true);
@@ -195,9 +189,6 @@ export default function ReaderFeedback() {
             return { statement, answer, followUp };
           }),
           blanks: state.blanks,
-          outfitOfTheDay: ootdPick
-            ? OOTD_ITEMS.find((o) => o.id === ootdPick)?.caption ?? ootdPick
-            : null,
           submittedAt: new Date().toISOString(),
         }),
       });
@@ -398,13 +389,6 @@ export default function ReaderFeedback() {
                     </p>
                   </div>
 
-                  {/* BLOCK C — Outfit of the Day, the side puzzle */}
-                  <div
-                    className="relative border border-clutch-ink/70 bg-clutch-paper paper-card p-3 shadow-paper"
-                    style={{ transform: "rotate(-0.6deg)" }}
-                  >
-                    <OutfitOfTheDay onPickChange={handleOotdPick} />
-                  </div>
                 </div>
               </div>
 

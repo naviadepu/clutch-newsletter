@@ -52,6 +52,7 @@ const vt323 = VT323({
   display: "swap",
 });
 
+
 export const metadata: Metadata = {
   title: "The Clutch Update · May 2026",
   description:
