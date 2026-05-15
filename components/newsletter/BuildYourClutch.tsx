@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PixelHeart,
@@ -238,61 +238,11 @@ function PlayingCard({
   );
 }
 
-function HeartBurst({ visible }: { visible: boolean }) {
-  const hearts = useMemo(
-    () =>
-      Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i / 12) * Math.PI * 2;
-        const distance = 90 + Math.random() * 60;
-        return {
-          id: i,
-          x: Math.cos(angle) * distance,
-          y: Math.sin(angle) * distance,
-          rotate: -30 + Math.random() * 60,
-          size: 14 + Math.random() * 14,
-          delay: Math.random() * 0.08,
-        };
-      }),
-    []
-  );
-
-  return (
-    <AnimatePresence>
-      {visible ? (
-        <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center">
-          {hearts.map((h) => (
-            <motion.div
-              key={h.id}
-              initial={{ x: 0, y: 0, opacity: 1, scale: 0.6, rotate: h.rotate }}
-              animate={{
-                x: h.x,
-                y: h.y,
-                opacity: 0,
-                scale: 1.1,
-                rotate: h.rotate + 60,
-              }}
-              transition={{ duration: 0.6, delay: h.delay, ease: "easeOut" }}
-              className="absolute"
-            >
-              <SolidHeart
-                size={h.size}
-                color={Math.random() > 0.5 ? "#EB6E9E" : "#D6336C"}
-              />
-            </motion.div>
-          ))}
-        </div>
-      ) : null}
-    </AnimatePresence>
-  );
-}
-
 export default function BuildYourClutch() {
   const [picked, setPicked] = useState<ScrapId[]>([]);
   const [top1, setTop1] = useState<ScrapId | null>(null);
   const [dealbreaker, setDealbreaker] = useState("");
   const [pulsingId, setPulsingId] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const [burst, setBurst] = useState(false);
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -337,7 +287,6 @@ export default function BuildYourClutch() {
   }, [picked, top1]);
 
   const togglePick = (id: ScrapId) => {
-    if (submitted) return;
     setPulsingId(id);
     window.setTimeout(() => setPulsingId(null), 160);
     setPicked((prev) =>
@@ -348,34 +297,6 @@ export default function BuildYourClutch() {
   const pickedCards = picked
     .map((id) => CARDS.find((c) => c.id === id))
     .filter(Boolean) as Card[];
-
-  // If only one card is picked, that one is implicitly Your #1
-  const effectiveTop1: ScrapId | null =
-    pickedCards.length === 1 ? pickedCards[0].id : top1;
-
-  const handleSubmit = async () => {
-    if (submitted) return;
-    if (picked.length === 0) return;
-    setBurst(true);
-    setSubmitted(true);
-    const top1Card = CARDS.find((c) => c.id === effectiveTop1);
-    try {
-      await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "deck",
-          picked: pickedCards.map((c) => c.label),
-          top1: top1Card?.label ?? null,
-          dealbreaker: dealbreaker.trim() || null,
-          submittedAt: new Date().toISOString(),
-        }),
-      });
-    } catch (e) {
-      console.warn("deck post failed", e);
-    }
-    window.setTimeout(() => setBurst(false), 800);
-  };
 
   return (
     <section className="relative mt-12 px-2 sm:px-4">
@@ -404,8 +325,6 @@ export default function BuildYourClutch() {
       </div>
 
       <div className="relative mt-6">
-        <HeartBurst visible={burst} />
-
         <div className="mx-auto grid max-w-[1100px] gap-6 md:grid-cols-12 md:items-start">
           {/* DECK GRID — col-span-5 on desktop so the moodboard gets room to breathe */}
           <div className="md:col-span-5">
@@ -418,19 +337,16 @@ export default function BuildYourClutch() {
                     key={card.id}
                     type="button"
                     onClick={() => togglePick(card.id)}
-                    disabled={submitted}
                     animate={
                       pulsing
                         ? { scale: [1, 1.05, 1] }
                         : { scale: 1, rotate: selected ? 0 : card.rest }
                     }
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    whileHover={
-                      submitted ? undefined : { y: -4, rotate: 0, scale: 1.02 }
-                    }
+                    whileHover={{ y: -4, rotate: 0, scale: 1.02 }}
                     aria-pressed={selected}
                     aria-label={`${selected ? "Remove" : "Add"} ${card.label}`}
-                    className="focus:outline-none focus-visible:ring-2 focus-visible:ring-clutch-hot/60 disabled:cursor-not-allowed"
+                    className="focus:outline-none focus-visible:ring-2 focus-visible:ring-clutch-hot/60"
                     style={{
                       rotate: selected ? "0deg" : `${card.rest}deg`,
                       transformOrigin: "50% 100%",
@@ -447,11 +363,9 @@ export default function BuildYourClutch() {
             </div>
 
             <p className="mt-4 font-pixel text-[14px] tracking-wide text-clutch-chocolate/70">
-              {submitted
-                ? `deck sent · ${picked.length} card${picked.length === 1 ? "" : "s"}`
-                : picked.length === 0
-                  ? "tap a card to add it · tap again to remove"
-                  : `${picked.length} card${picked.length === 1 ? "" : "s"} picked`}
+              {picked.length === 0
+                ? "tap a card to add it · tap again to remove"
+                : `${picked.length} card${picked.length === 1 ? "" : "s"} picked`}
             </p>
           </div>
 
@@ -469,14 +383,14 @@ export default function BuildYourClutch() {
                 className="sparkle-spin absolute -right-2 top-10"
                 style={{ animationDelay: "0.6s" }}
               />
-              <Moodboard picked={picked} submitted={submitted} />
+              <Moodboard picked={picked} submitted={false} />
             </div>
           </div>
         </div>
 
-        {/* VALIDATION QUESTIONS — visible only after at least one card is picked, hidden after submit */}
+        {/* VALIDATION QUESTIONS — visible once at least one card is picked */}
         <AnimatePresence initial={false}>
-          {!submitted && pickedCards.length >= 1 ? (
+          {pickedCards.length >= 1 ? (
             <motion.div
               key="validation"
               initial={{ opacity: 0, y: 8 }}
@@ -617,92 +531,6 @@ export default function BuildYourClutch() {
           ) : null}
         </AnimatePresence>
 
-        {/* SUBMIT or THANKS */}
-        <AnimatePresence mode="wait" initial={false}>
-          {!submitted ? (
-            <motion.div
-              key="submit"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}
-              className="mx-auto mt-8 flex max-w-[860px] flex-col items-center gap-2 text-center"
-            >
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={picked.length === 0}
-                className="group relative inline-flex items-center gap-2 border-[1.5px] border-dashed border-clutch-hot bg-clutch-paper px-6 py-2.5 font-display italic text-clutch-ink shadow-paper transition hover:bg-clutch-hot hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-clutch-paper disabled:hover:text-clutch-ink"
-                style={{ borderRadius: "2px", fontSize: 20 }}
-              >
-                <FourPointStar size={12} color="currentColor" />
-                send the deck in
-                <span aria-hidden>→</span>
-              </button>
-              {picked.length === 0 ? (
-                <p className="font-body text-[12px] italic text-clutch-chocolate/70">
-                  pick at least one to send
-                </p>
-              ) : (
-                <p className="flex items-center gap-1.5 font-body text-[12px] text-clutch-chocolate/80">
-                  <PixelHeart size={9} className="heart-pulse" />
-                  we read every deck. promise.
-                </p>
-              )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="thanks"
-              initial={{ opacity: 0, y: 12, rotate: -2 }}
-              animate={{ opacity: 1, y: 0, rotate: -1.4 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="relative mx-auto mt-8 max-w-[440px]"
-            >
-              <div
-                className="relative bg-white px-4 py-3 paper-card"
-                style={{
-                  boxShadow:
-                    "3px 4px 0 rgba(27,27,27,0.16), 0 1px 0 rgba(27,27,27,0.05)",
-                  border: "1px solid rgba(27,27,27,0.18)",
-                }}
-              >
-                <span
-                  aria-hidden
-                  className="halftone-pink pointer-events-none absolute inset-0 opacity-15"
-                />
-                <div className="relative flex items-baseline justify-between gap-3">
-                  <p className="font-body text-[10px] uppercase tracking-[0.28em] text-clutch-hot">
-                    ❤ filed under: noted
-                  </p>
-                  <p className="font-pixel text-[11px] tracking-wide text-clutch-chocolate/65">
-                    {new Date().toISOString().slice(0, 10)}
-                  </p>
-                </div>
-                <h3
-                  className="relative font-script text-clutch-ink"
-                  style={{
-                    fontSize: "clamp(28px, 4.8vw, 38px)",
-                    lineHeight: 0.95,
-                  }}
-                >
-                  thanks. we got your deck.
-                </h3>
-                <p className="relative mt-0.5 font-display italic text-[14px] text-clutch-ink">
-                  building from this.
-                </p>
-                {pickedCards.length ? (
-                  <p className="relative mt-2 font-body text-[12px] leading-snug text-clutch-ink">
-                    you sent us:{" "}
-                    <span className="font-bold text-clutch-hot">
-                      {pickedCards.map((c) => c.label).join(", ")}
-                    </span>
-                    .
-                  </p>
-                ) : null}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </section>
   );

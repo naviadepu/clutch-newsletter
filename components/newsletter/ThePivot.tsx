@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PhoneMockup from "./PhoneMockup";
 import { PixelHeart, FourPointStar } from "./decorations";
@@ -12,10 +12,11 @@ const CLARITY_OPTIONS = [
   "Don't get it yet",
 ];
 
-type ScreenId = "empty" | "home" | "community" | "share";
+type ScreenId = "home" | "community" | "share";
+
+const CYCLE: ScreenId[] = ["home", "community", "share"];
 
 const CAPTIONS: Record<ScreenId, string> = {
-  empty: "hover a feature, see it move.",
   home: "01 · the home feed.",
   community: "02 · the community tab.",
   share: "03 · the share.",
@@ -26,10 +27,10 @@ const CAPTIONS: Record<ScreenId, string> = {
 function ScreenWrap({ children }: { children: ReactNode }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      initial={{ opacity: 0, x: 18 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -18 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
       className="flex h-full flex-col gap-1.5 p-2.5"
     >
       {children}
@@ -138,30 +139,6 @@ function AvatarBubble({ name, bg }: { name: string; bg: string }) {
     >
       {name}
     </span>
-  );
-}
-
-function EmptyScreen() {
-  return (
-    <ScreenWrap>
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 px-3 text-center">
-        <span aria-hidden className="text-clutch-hot">
-          <PixelHeart size={18} className="heart-pulse" />
-        </span>
-        <p
-          className="font-pinyon text-clutch-hot"
-          style={{ fontSize: 30, lineHeight: 0.85 }}
-        >
-          hover a feature
-        </p>
-        <p className="font-body italic text-[10px] leading-snug text-clutch-chocolate/85">
-          to see how it actually looks in the app.
-        </p>
-        <p className="mt-1 font-body text-[8px] uppercase tracking-[0.22em] text-clutch-chocolate/65">
-          &larr; try one
-        </p>
-      </div>
-    </ScreenWrap>
   );
 }
 
@@ -393,7 +370,6 @@ function PhoneSwap({ screen }: { screen: ScreenId }) {
   return (
     <PhoneMockup rotate={3.5} caption={CAPTIONS[screen]}>
       <AnimatePresence mode="wait">
-        {screen === "empty" ? <EmptyScreen key="empty" /> : null}
         {screen === "home" ? <HomeScreen key="home" /> : null}
         {screen === "community" ? <CommunityScreen key="community" /> : null}
         {screen === "share" ? <ShareScreen key="share" /> : null}
@@ -406,7 +382,26 @@ function PhoneSwap({ screen }: { screen: ScreenId }) {
 
 export default function ThePivot() {
   const [clarity, setClarity] = useState<string | null>(null);
-  const [screen, setScreen] = useState<ScreenId>("empty");
+  const [screen, setScreen] = useState<ScreenId>("home");
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function startCycle() {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setScreen((s) => CYCLE[(CYCLE.indexOf(s) + 1) % CYCLE.length]);
+    }, 2500);
+  }
+
+  useEffect(() => {
+    startCycle();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleFeature = (s: ScreenId) => {
+    setScreen(s);
+    startCycle();
+  };
 
   return (
     <section className="relative mt-6 px-2 sm:mt-8 sm:px-4">
@@ -479,7 +474,8 @@ export default function ThePivot() {
 
             <div
               className="mb-4 break-inside-avoid"
-              onMouseEnter={() => setScreen("home")}
+              onMouseEnter={() => handleFeature("home")}
+              onClick={() => handleFeature("home")}
             >
               <p
                 className="mb-1 font-display italic font-bold text-clutch-hot"
@@ -502,7 +498,8 @@ export default function ThePivot() {
 
             <div
               className="mb-4 break-inside-avoid"
-              onMouseEnter={() => setScreen("community")}
+              onMouseEnter={() => handleFeature("community")}
+              onClick={() => handleFeature("community")}
             >
               <p
                 className="mb-1 font-display italic font-bold text-clutch-hot"
@@ -519,7 +516,8 @@ export default function ThePivot() {
 
             <div
               className="mb-4 break-inside-avoid"
-              onMouseEnter={() => setScreen("share")}
+              onMouseEnter={() => handleFeature("share")}
+              onClick={() => handleFeature("share")}
             >
               <p
                 className="mb-1 font-display italic font-bold text-clutch-hot"
