@@ -638,7 +638,7 @@ export default function ReaderFeedback() {
                     <button
                       type="button"
                       onClick={goPrev}
-                      className="font-body text-[12px] italic text-clutch-chocolate/60 transition hover:text-clutch-ink"
+                      className="font-body text-[15px] italic text-clutch-chocolate/60 transition hover:text-clutch-ink"
                     >
                       ← back
                     </button>
@@ -747,7 +747,7 @@ export default function ReaderFeedback() {
                       setStep(0);
                       setAnswers(BLANK);
                     }}
-                    className="mt-4 font-body text-[11px] italic text-clutch-chocolate/45 underline underline-offset-2 hover:text-clutch-chocolate/70 transition"
+                    className="mt-4 font-body text-[14px] italic text-clutch-chocolate/55 underline underline-offset-2 hover:text-clutch-chocolate/80 transition"
                   >
                     retake survey
                   </button>
