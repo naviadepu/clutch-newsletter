@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FourPointStar, SolidHeart } from "./decorations";
 
-const STORAGE_KEY = "clutch_survey_2026_05_v2";
+const STORAGE_KEY = "clutch_survey_2026_05_v3";
 const TOTAL_STEPS = 12;
 
 type Answers = {
@@ -677,6 +677,18 @@ export default function ReaderFeedback() {
                   <p className="mt-1 font-display italic text-[18px] text-clutch-ink">
                     you&rsquo;re loud and we love it.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try { window.localStorage.removeItem(STORAGE_KEY); } catch {}
+                      setSubmitted(false);
+                      setStep(0);
+                      setAnswers(BLANK);
+                    }}
+                    className="mt-4 font-body text-[11px] italic text-clutch-chocolate/45 underline underline-offset-2 hover:text-clutch-chocolate/70 transition"
+                  >
+                    retake survey
+                  </button>
                 </div>
               </div>
             </motion.div>
