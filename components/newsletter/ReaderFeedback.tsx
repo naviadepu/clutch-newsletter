@@ -201,6 +201,7 @@ export default function ReaderFeedback() {
   const [answers, setAnswers] = useState<Answers>(BLANK);
   const [submitted, setSubmitted] = useState(false);
   const [burst, setBurst] = useState(false);
+  const [showError, setShowError] = useState(false);
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -242,16 +243,58 @@ export default function ReaderFeedback() {
   const setSingle = (key: "q2a" | "q6", value: string) =>
     setAnswers((prev) => ({ ...prev, [key]: prev[key] === value ? "" : value }));
 
+  function isValid(s: number): boolean {
+    switch (s) {
+      case 0:  return answers.q1.length > 0;
+      case 1:  return answers.q2a !== "" && (answers.q2a === "i deleted it" || answers.q2b.length > 0);
+      case 2:  return answers.q3.length > 0;
+      case 3:  return answers.q4.length > 0;
+      case 4:  return answers.q5.length > 0;
+      case 5:  return answers.q6 !== "";
+      case 6:  return answers.q7.trim() !== "";
+      case 7:  return answers.q8.trim() !== "";
+      case 8:  return answers.q9text.trim() !== "";
+      case 9:  return answers.q10.trim() !== "";
+      case 10: return answers.q11.length > 0;
+      case 11: return answers.q12.trim() !== "";
+      default: return true;
+    }
+  }
+
+  const ERROR_MSGS: Record<number, string> = {
+    0:  "pick at least one to continue",
+    1:  answers.q2a === "" ? "tell us when you last opened it" : "tell us what you did in there",
+    2:  "pick at least one to continue",
+    3:  "pick at least one to continue",
+    4:  "pick at least one to continue",
+    5:  "pick one to continue",
+    6:  "this one’s required — even just a few words",
+    7:  "this one’s required — even just a few words",
+    8:  "this one’s required — even just a few words",
+    9:  "this one’s required — write “none” if nothing applies",
+    10: "pick at least one to continue",
+    11: "drop your number to grab one of the 50 spots",
+  };
+
+  // clear error as soon as the step becomes valid
+  useEffect(() => {
+    if (showError && isValid(step)) setShowError(false);
+  });
+
   const goNext = () => {
+    if (!isValid(step)) { setShowError(true); return; }
+    setShowError(false);
     setDirection(1);
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   };
   const goPrev = () => {
+    setShowError(false);
     setDirection(-1);
     setStep((s) => Math.max(s - 1, 0));
   };
 
   const handleSubmit = async () => {
+    if (!isValid(step)) { setShowError(true); return; }
     if (submitted) return;
     setBurst(true);
     setSubmitted(true);
@@ -612,7 +655,7 @@ export default function ReaderFeedback() {
 
               {/* Question card */}
               <div
-                className="overflow-hidden border-[1.5px] border-clutch-ink bg-clutch-paper paper-card shadow-paper"
+                className={`overflow-hidden border-[1.5px] bg-clutch-paper paper-card shadow-paper transition-colors ${showError ? "border-clutch-hot" : "border-clutch-ink"}`}
                 style={{ minHeight: 280 }}
               >
                 <AnimatePresence mode="wait" custom={direction}>
@@ -628,6 +671,21 @@ export default function ReaderFeedback() {
                   >
                     {renderStep()}
                   </motion.div>
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {showError && (
+                    <motion.p
+                      key="err"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                      className="px-5 pb-4 font-body text-[12px] italic text-clutch-hot sm:px-6"
+                    >
+                      ✦ {ERROR_MSGS[step]}
+                    </motion.p>
+                  )}
                 </AnimatePresence>
               </div>
 
