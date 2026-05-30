@@ -447,7 +447,7 @@ export default function ReaderFeedback() {
       case 7:
         return (
           <>
-            <QLabel num="08">last time you needed a period product and didn't have one, walk us through what happened.</QLabel>
+            <QLabel num="08">last time you needed a period product and didn&apos;t have one, walk us through what happened.</QLabel>
             <TextArea
               value={answers.q8}
               onChange={(v) => set("q8", v)}
@@ -461,7 +461,7 @@ export default function ReaderFeedback() {
       case 8:
         return (
           <>
-            <QLabel num="09">have you ever downloaded a wellness or health app, told yourself you'd actually use it, and then stopped opening it? walk us through what happened.</QLabel>
+            <QLabel num="09">have you ever downloaded a wellness or health app, told yourself you&apos;d actually use it, and then stopped opening it? walk us through what happened.</QLabel>
             <TextArea
               value={answers.q9text}
               onChange={(v) => set("q9text", v)}
@@ -492,7 +492,7 @@ export default function ReaderFeedback() {
         return (
           <>
             <QLabel num="10">which wellness, health, or lifestyle app have you actually stuck with for 6+ months? what about it kept you opening it?</QLabel>
-            <Hint>write "none" if nothing applies.</Hint>
+            <Hint>write &ldquo;none&rdquo; if nothing applies.</Hint>
             <TextArea
               value={answers.q10}
               onChange={(v) => set("q10", v)}
