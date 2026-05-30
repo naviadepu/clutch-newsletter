@@ -1,58 +1,46 @@
+
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  PixelHeart,
-  SolidHeart,
-  FourPointStar,
-  Scissors,
-} from "./decorations";
+import { FourPointStar, SolidHeart } from "./decorations";
 
-const STORAGE_KEY = "clutch_feedback_2026_05";
+const STORAGE_KEY = "clutch_survey_2026_05_v2";
+const TOTAL_STEPS = 12;
 
-const HOT_TAKES = [
-  "I'd rather have one app for all my girl stuff than five separate ones.",
-  "If an app knew my cycle phase, I'd actually open it more.",
-  "I'd quit a wellness app if my close friends weren't on it.",
-  "I'd pay $5 a month for an app actually built for college girls.",
-  "I'd share period products with friends I trust. Strangers feel weird.",
-  "Most period or wellness apps only get me to open them once a month. That's the real problem.",
-];
-
-type ChipKey = "same" | "skip" | "huh";
-const CHIP_LABELS: Record<ChipKey, string> = {
-  same: "♥ same",
-  skip: "skip",
-  huh: "huh?",
-};
-const CHIP_STYLES: Record<ChipKey, { selected: string; idle: string }> = {
-  same: {
-    selected: "bg-clutch-hot text-white border-clutch-hot",
-    idle: "bg-clutch-paper text-clutch-ink border-clutch-ink/60 hover:bg-clutch-softpink/55",
-  },
-  skip: {
-    selected: "bg-clutch-chocolate/15 text-clutch-ink border-clutch-chocolate/60",
-    idle: "bg-clutch-paper text-clutch-ink border-clutch-ink/60 hover:bg-clutch-chocolate/10",
-  },
-  huh: {
-    selected: "bg-[#F4E2A3] text-clutch-ink border-[#B89B3F]",
-    idle: "bg-clutch-paper text-clutch-ink border-clutch-ink/60 hover:bg-[#FCEFC7]",
-  },
+type Answers = {
+  q1: string[]; q1other: string;
+  q2a: string; q2b: string[];
+  q3: string[]; q3other: string;
+  q4: string[]; q4other: string;
+  q5: string[]; q5other: string;
+  q6: string;
+  q7: string;
+  q8: string;
+  q9text: string; q9apps: string[]; q9other: string;
+  q10: string;
+  q11: string[];
+  q12: string;
 };
 
-type State = {
-  takes: Record<number, ChipKey | null>;
-  /** per-row follow-up text — persists when user toggles between chips */
-  followUps: Record<number, string>;
-  blanks: { had: string; skipped: string; dealbreaker: string };
+const BLANK: Answers = {
+  q1: [], q1other: "",
+  q2a: "", q2b: [],
+  q3: [], q3other: "",
+  q4: [], q4other: "",
+  q5: [], q5other: "",
+  q6: "",
+  q7: "",
+  q8: "",
+  q9text: "", q9apps: [], q9other: "",
+  q10: "",
+  q11: [],
+  q12: "",
 };
 
-const INITIAL: State = {
-  takes: {},
-  followUps: {},
-  blanks: { had: "", skipped: "", dealbreaker: "" },
-};
+type ArrayKeys = "q1" | "q2b" | "q3" | "q4" | "q5" | "q9apps" | "q11";
+
+// ---- Subcomponents ----
 
 function HeartBurst({ visible }: { visible: boolean }) {
   const hearts = useMemo(
@@ -79,20 +67,11 @@ function HeartBurst({ visible }: { visible: boolean }) {
             <motion.div
               key={h.id}
               initial={{ x: 0, y: 0, opacity: 1, scale: 0.6, rotate: h.rotate }}
-              animate={{
-                x: h.x,
-                y: h.y,
-                opacity: 0,
-                scale: 1.1,
-                rotate: h.rotate + 60,
-              }}
+              animate={{ x: h.x, y: h.y, opacity: 0, scale: 1.1, rotate: h.rotate + 60 }}
               transition={{ duration: 0.6, delay: h.delay, ease: "easeOut" }}
               className="absolute"
             >
-              <SolidHeart
-                size={h.size}
-                color={Math.random() > 0.5 ? "#EB6E9E" : "#D6336C"}
-              />
+              <SolidHeart size={h.size} color={Math.random() > 0.5 ? "#EB6E9E" : "#D6336C"} />
             </motion.div>
           ))}
         </div>
@@ -101,36 +80,125 @@ function HeartBurst({ visible }: { visible: boolean }) {
   );
 }
 
-function MadLibBlank({
+function Chip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={[
+        "border px-3 py-1.5 font-body text-[13px] tracking-wide transition-all active:translate-y-px select-none",
+        selected
+          ? "bg-clutch-hot text-white border-clutch-hot"
+          : "bg-clutch-paper text-clutch-ink border-clutch-ink/60 hover:bg-clutch-softpink/55",
+      ].join(" ")}
+      style={{ borderRadius: "2px" }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function WriteInField({
   value,
   onChange,
-  placeholder,
-  width = "10ch",
+  placeholder = "type here...",
+  label,
 }: {
   value: string;
   onChange: (v: string) => void;
-  placeholder: string;
-  width?: string;
+  placeholder?: string;
+  label?: string;
 }) {
   return (
-    <input
-      type="text"
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+      className="overflow-hidden"
+    >
+      <div className="pt-2.5">
+        {label && (
+          <p className="mb-1 font-body text-[10px] uppercase tracking-[0.26em] text-clutch-chocolate/65">
+            {label}
+          </p>
+        )}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full border-0 border-b border-dashed border-clutch-ink/70 bg-transparent pb-1 font-display italic text-clutch-hot placeholder:text-clutch-chocolate/40 focus:border-solid focus:border-clutch-hot focus:outline-none"
+          style={{ fontSize: 14 }}
+        />
+      </div>
+    </motion.div>
+  );
+}
+
+function TextArea({
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <textarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="border-0 border-b border-dashed border-clutch-ink/70 bg-transparent px-1 pb-0.5 font-display italic text-clutch-hot placeholder:font-display placeholder:italic placeholder:text-clutch-chocolate/40 focus:border-solid focus:border-clutch-hot focus:outline-none"
-      style={{
-        minWidth: width,
-        width: value ? `${Math.max(value.length + 2, 10)}ch` : width,
-        fontSize: "inherit",
-        lineHeight: "inherit",
-      }}
+      rows={rows}
+      className="w-full border border-dashed border-clutch-ink/60 bg-transparent p-3 font-display italic text-clutch-hot placeholder:text-clutch-chocolate/40 focus:border-solid focus:border-clutch-hot focus:outline-none resize-none"
+      style={{ fontSize: 14, borderRadius: "2px", lineHeight: 1.65 }}
     />
   );
 }
 
+function QLabel({ num, children }: { num: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-4">
+      <span className="font-pixel text-[13px] tracking-widest text-clutch-hot">{num}</span>
+      <p className="mt-1 font-display italic leading-snug text-clutch-ink" style={{ fontSize: "clamp(16px, 2.2vw, 19px)" }}>
+        {children}
+      </p>
+    </div>
+  );
+}
+
+function Hint({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-3 font-body text-[12px] italic text-clutch-chocolate/65">{children}</p>
+  );
+}
+
+function SubLabel({ children, first }: { children: React.ReactNode; first?: boolean }) {
+  return (
+    <p className={`mb-2 font-body text-[10px] uppercase tracking-[0.26em] text-clutch-chocolate/65${first ? "" : " mt-4"}`}>
+      {children}
+    </p>
+  );
+}
+
+// ---- Main component ----
+
 export default function ReaderFeedback() {
-  const [state, setState] = useState<State>(INITIAL);
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [answers, setAnswers] = useState<Answers>(BLANK);
   const [submitted, setSubmitted] = useState(false);
   const [burst, setBurst] = useState(false);
   const hydrated = useRef(false);
@@ -140,7 +208,8 @@ export default function ReaderFeedback() {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.state) setState({ ...INITIAL, ...parsed.state });
+        if (parsed?.answers) setAnswers({ ...BLANK, ...parsed.answers });
+        if (typeof parsed?.step === "number") setStep(parsed.step);
         if (parsed?.submitted) setSubmitted(true);
       }
     } catch {}
@@ -150,25 +219,33 @@ export default function ReaderFeedback() {
   useEffect(() => {
     if (!hydrated.current) return;
     try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ state, submitted })
-      );
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ answers, step, submitted }));
     } catch {}
-  }, [state, submitted]);
+  }, [answers, step, submitted]);
 
-  const setTake = (i: number, value: ChipKey) => {
-    setState((prev) => ({
-      ...prev,
-      takes: { ...prev.takes, [i]: prev.takes[i] === value ? null : value },
-    }));
+  const set = <K extends keyof Answers>(key: K, value: Answers[K]) =>
+    setAnswers((prev) => ({ ...prev, [key]: value }));
+
+  const toggle = (key: ArrayKeys, value: string) =>
+    setAnswers((prev) => {
+      const arr = prev[key] as string[];
+      return {
+        ...prev,
+        [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
+      };
+    });
+
+  const setSingle = (key: "q2a" | "q6", value: string) =>
+    setAnswers((prev) => ({ ...prev, [key]: prev[key] === value ? "" : value }));
+
+  const goNext = () => {
+    setDirection(1);
+    setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   };
-
-  const setBlank = (key: keyof State["blanks"], value: string) => {
-    setState((prev) => ({ ...prev, blanks: { ...prev.blanks, [key]: value } }));
+  const goPrev = () => {
+    setDirection(-1);
+    setStep((s) => Math.max(s - 1, 0));
   };
-
-  const loggedCount = Object.values(state.takes).filter(Boolean).length;
 
   const handleSubmit = async () => {
     if (submitted) return;
@@ -178,19 +255,7 @@ export default function ReaderFeedback() {
       await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "reader-feedback",
-          takes: HOT_TAKES.map((statement, i) => {
-            const answer = state.takes[i] ?? null;
-            const followUp =
-              answer === "skip" || answer === "huh"
-                ? state.followUps[i]?.trim() || null
-                : null;
-            return { statement, answer, followUp };
-          }),
-          blanks: state.blanks,
-          submittedAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ kind: "reader-survey", answers, submittedAt: new Date().toISOString() }),
       });
     } catch (e) {
       console.warn("feedback post failed", e);
@@ -198,8 +263,290 @@ export default function ReaderFeedback() {
     window.setTimeout(() => setBurst(false), 800);
   };
 
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 48 : -48, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -48 : 48, opacity: 0 }),
+  };
+
+  function renderStep() {
+    switch (step) {
+      // Q1 — cycle/wellness apps
+      case 0:
+        return (
+          <>
+            <QLabel num="01">which cycle or wellness app is on your phone right now?</QLabel>
+            <Hint>select all that apply</Hint>
+            <div className="flex flex-wrap gap-2">
+              {["flo", "stardust", "clue", "natural cycles", "apple health", "none"].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q1.includes(opt)} onClick={() => toggle("q1", opt)} />
+              ))}
+              <Chip label="other" selected={answers.q1.includes("other")} onClick={() => toggle("q1", "other")} />
+            </div>
+            <AnimatePresence>
+              {answers.q1.includes("other") && (
+                <WriteInField
+                  value={answers.q1other}
+                  onChange={(v) => set("q1other", v)}
+                  placeholder="which one?"
+                />
+              )}
+            </AnimatePresence>
+          </>
+        );
+
+      // Q2 — last opened + what did
+      case 1:
+        return (
+          <>
+            <QLabel num="02">when did you last open it, and what did you do once you were in?</QLabel>
+            <SubLabel first>when did you last open it?</SubLabel>
+            <div className="flex flex-wrap gap-2">
+              {["today", "this week", "this month", "longer than that", "i deleted it"].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q2a === opt} onClick={() => setSingle("q2a", opt)} />
+              ))}
+            </div>
+            <AnimatePresence>
+              {answers.q2a && answers.q2a !== "i deleted it" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <SubLabel>what did you actually do once you were in?</SubLabel>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "logged my period",
+                      "checked my phase",
+                      "scrolled the content",
+                      "just glanced and closed",
+                      "opened it by accident",
+                      "honestly i forget",
+                    ].map((opt) => (
+                      <Chip key={opt} label={opt} selected={answers.q2b.includes(opt)} onClick={() => toggle("q2b", opt)} />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        );
+
+      // Q3 — recipes
+      case 2:
+        return (
+          <>
+            <QLabel num="03">where do you usually look for recipes?</QLabel>
+            <Hint>select all that apply</Hint>
+            <div className="flex flex-wrap gap-2">
+              {["tiktok", "instagram saves", "pinterest", "youtube", "google search", "friends / family", "i don't really cook", "other"].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q3.includes(opt)} onClick={() => toggle("q3", opt)} />
+              ))}
+              <Chip label="a specific app" selected={answers.q3.includes("a specific app")} onClick={() => toggle("q3", "a specific app")} />
+            </div>
+            <AnimatePresence>
+              {answers.q3.includes("a specific app") && (
+                <WriteInField
+                  value={answers.q3other}
+                  onChange={(v) => set("q3other", v)}
+                  placeholder="which app?"
+                />
+              )}
+            </AnimatePresence>
+          </>
+        );
+
+      // Q4 — workouts
+      case 3:
+        return (
+          <>
+            <QLabel num="04">where do you usually look for workouts or fitness content?</QLabel>
+            <Hint>select all that apply</Hint>
+            <div className="flex flex-wrap gap-2">
+              {["tiktok", "instagram saves", "youtube", "pinterest", "a trainer or class", "i don't really work out", "other"].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q4.includes(opt)} onClick={() => toggle("q4", opt)} />
+              ))}
+              <Chip label="a specific fitness app" selected={answers.q4.includes("a specific fitness app")} onClick={() => toggle("q4", "a specific fitness app")} />
+            </div>
+            <AnimatePresence>
+              {answers.q4.includes("a specific fitness app") && (
+                <WriteInField
+                  value={answers.q4other}
+                  onChange={(v) => set("q4other", v)}
+                  placeholder="which app?"
+                />
+              )}
+            </AnimatePresence>
+          </>
+        );
+
+      // Q5 — outfit inspo
+      case 4:
+        return (
+          <>
+            <QLabel num="05">where do you usually look for outfit inspo?</QLabel>
+            <Hint>select all that apply</Hint>
+            <div className="flex flex-wrap gap-2">
+              {["tiktok", "instagram saves", "pinterest", "in stores / while shopping", "friends", "i wear the same stuff every day", "other"].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q5.includes(opt)} onClick={() => toggle("q5", opt)} />
+              ))}
+              <Chip label="specific creators" selected={answers.q5.includes("specific creators")} onClick={() => toggle("q5", "specific creators")} />
+            </div>
+            <AnimatePresence>
+              {answers.q5.includes("specific creators") && (
+                <WriteInField
+                  value={answers.q5other}
+                  onChange={(v) => set("q5other", v)}
+                  placeholder="who do you follow?"
+                />
+              )}
+            </AnimatePresence>
+          </>
+        );
+
+      // Q6 — cycle-based changes
+      case 5:
+        return (
+          <>
+            <QLabel num="06">have you ever changed what you eat or how you work out based on where you are in your cycle?</QLabel>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {[
+                "yes, i do this regularly",
+                "yes, sometimes",
+                "no, but i've thought about it",
+                "no, never crossed my mind",
+              ].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q6 === opt} onClick={() => setSingle("q6", opt)} />
+              ))}
+            </div>
+          </>
+        );
+
+      // Q7 — paid apps
+      case 6:
+        return (
+          <>
+            <QLabel num="07">what apps or subscriptions do you actually pay for monthly?</QLabel>
+            <Hint>just names, no judgement.</Hint>
+            <TextArea
+              value={answers.q7}
+              onChange={(v) => set("q7", v)}
+              placeholder="spotify, hinge, tiktok shop credits..."
+              rows={3}
+            />
+          </>
+        );
+
+      // Q8 — period product story
+      case 7:
+        return (
+          <>
+            <QLabel num="08">last time you needed a period product and didn't have one, walk us through what happened.</QLabel>
+            <TextArea
+              value={answers.q8}
+              onChange={(v) => set("q8", v)}
+              placeholder="be as specific or vague as you want..."
+              rows={5}
+            />
+          </>
+        );
+
+      // Q9 — wellness app ghost
+      case 8:
+        return (
+          <>
+            <QLabel num="09">have you ever downloaded a wellness or health app, told yourself you'd actually use it, and then stopped opening it? walk us through what happened.</QLabel>
+            <TextArea
+              value={answers.q9text}
+              onChange={(v) => set("q9text", v)}
+              placeholder="what happened..."
+              rows={4}
+            />
+            <SubLabel>which app? (optional)</SubLabel>
+            <div className="flex flex-wrap gap-2">
+              {["flo", "stardust", "clue", "headspace", "calm", "noom"].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q9apps.includes(opt)} onClick={() => toggle("q9apps", opt)} />
+              ))}
+              <Chip label="other" selected={answers.q9apps.includes("other")} onClick={() => toggle("q9apps", "other")} />
+            </div>
+            <AnimatePresence>
+              {answers.q9apps.includes("other") && (
+                <WriteInField
+                  value={answers.q9other}
+                  onChange={(v) => set("q9other", v)}
+                  placeholder="which one?"
+                />
+              )}
+            </AnimatePresence>
+          </>
+        );
+
+      // Q10 — app stuck with
+      case 9:
+        return (
+          <>
+            <QLabel num="10">which wellness, health, or lifestyle app have you actually stuck with for 6+ months? what about it kept you opening it?</QLabel>
+            <Hint>write "none" if nothing applies.</Hint>
+            <TextArea
+              value={answers.q10}
+              onChange={(v) => set("q10", v)}
+              placeholder="the app, and why you keep going back..."
+              rows={4}
+            />
+          </>
+        );
+
+      // Q11 — saved content format
+      case 10:
+        return (
+          <>
+            <QLabel num="11">when you save wellness, fitness, or lifestyle content, what format is it usually in?</QLabel>
+            <Hint>select all that apply</Hint>
+            <div className="flex flex-wrap gap-2">
+              {[
+                "short videos (tiktok / reels)",
+                "pinterest pins / image boards",
+                "written articles or blog posts",
+                "podcasts / audio",
+                "instagram carousels or posts",
+                "newsletters",
+                "i screenshot it from wherever",
+                "i don't really save this stuff",
+                "other",
+              ].map((opt) => (
+                <Chip key={opt} label={opt} selected={answers.q11.includes(opt)} onClick={() => toggle("q11", opt)} />
+              ))}
+            </div>
+          </>
+        );
+
+      // Q12 — phone number
+      case 11:
+        return (
+          <>
+            <QLabel num="12">drop your number to claim one of 50 alpha access spots when the new clutch ships.</QLabel>
+            <Hint>us numbers only. no spam, promise.</Hint>
+            <input
+              type="tel"
+              value={answers.q12}
+              onChange={(e) => set("q12", e.target.value)}
+              placeholder="(555) 555-5555"
+              className="w-full border border-dashed border-clutch-ink/60 bg-transparent px-3 py-2.5 font-display italic text-clutch-hot placeholder:text-clutch-chocolate/40 focus:border-solid focus:border-clutch-hot focus:outline-none"
+              style={{ fontSize: 18, borderRadius: "2px" }}
+            />
+          </>
+        );
+
+      default:
+        return null;
+    }
+  }
+
   return (
     <section className="relative mt-12 px-2 sm:px-4">
+      {/* Section header */}
       <div className="text-center">
         <p className="font-body text-[11px] uppercase tracking-[0.32em] text-clutch-hot">
           ❤ &nbsp;reader page&nbsp; ❤
@@ -232,218 +579,79 @@ export default function ReaderFeedback() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="mx-auto max-w-[860px]"
+              className="mx-auto max-w-[680px]"
             >
-              {/* Top row: hot takes (left) + mad libs (right) */}
-              <div className="grid gap-5 md:grid-cols-12">
-                {/* BLOCK A — Hot takes */}
-                <div className="md:col-span-7 border-[1.5px] border-clutch-ink bg-clutch-paper paper-card p-5 shadow-paper">
-                  <div className="flex items-baseline justify-between gap-2 border-b border-dashed border-clutch-ink/50 pb-2">
-                    <p className="font-body text-[10px] uppercase tracking-[0.28em] text-clutch-hot">
-                      ❤ hot takes
-                    </p>
-                    <p className="font-pixel text-[12px] tracking-wide text-clutch-chocolate/70">
-                      {loggedCount} of {HOT_TAKES.length} logged
-                    </p>
-                  </div>
-                  <p className="mt-2 font-display italic text-[13px] text-clutch-chocolate/85">
-                    no polite answers. tap what you actually feel.
+              {/* Progress bar */}
+              <div className="mb-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="font-pixel text-[12px] tracking-wide text-clutch-chocolate/65">
+                    {String(step + 1).padStart(2, "0")} / {String(TOTAL_STEPS).padStart(2, "0")}
                   </p>
-
-                  <ul className="mt-3 divide-y divide-clutch-ink/15">
-                    {HOT_TAKES.map((statement, i) => {
-                      const chip = state.takes[i] ?? null;
-                      const showFollowUp = chip === "skip" || chip === "huh";
-                      const placeholder =
-                        chip === "skip"
-                          ? "what would make you ♥ same?"
-                          : "what didn't land?";
-                      return (
-                        <li key={i} className="py-3">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                            <p className="font-body text-[14px] leading-snug text-clutch-ink">
-                              {statement}
-                            </p>
-                            <div className="flex shrink-0 gap-1.5">
-                              {(Object.keys(CHIP_LABELS) as ChipKey[]).map(
-                                (key) => {
-                                  const selected = state.takes[i] === key;
-                                  const styles = CHIP_STYLES[key];
-                                  return (
-                                    <button
-                                      key={key}
-                                      type="button"
-                                      onClick={() => setTake(i, key)}
-                                      className={[
-                                        "border px-2.5 py-1 font-body text-[12px] tracking-wide transition active:translate-y-px",
-                                        selected ? styles.selected : styles.idle,
-                                      ].join(" ")}
-                                      style={{ borderRadius: "2px" }}
-                                      aria-pressed={selected}
-                                    >
-                                      {CHIP_LABELS[key]}
-                                    </button>
-                                  );
-                                }
-                              )}
-                            </div>
-                          </div>
-
-                          <AnimatePresence initial={false}>
-                            {showFollowUp ? (
-                              <motion.div
-                                key="follow"
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: "auto" }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                                className="overflow-hidden"
-                              >
-                                <div className="flex items-end gap-2 pt-2">
-                                  <input
-                                    type="text"
-                                    value={state.followUps[i] ?? ""}
-                                    onChange={(e) =>
-                                      setState((prev) => ({
-                                        ...prev,
-                                        followUps: {
-                                          ...prev.followUps,
-                                          [i]: e.target.value,
-                                        },
-                                      }))
-                                    }
-                                    placeholder={placeholder}
-                                    className="flex-1 border-0 border-b border-dashed border-clutch-ink/70 bg-transparent px-0 pb-1 font-display italic text-clutch-hot placeholder:text-clutch-chocolate/45 focus:border-solid focus:border-clutch-hot focus:outline-none"
-                                    style={{ fontSize: 14 }}
-                                  />
-                                  <span className="shrink-0 pb-1 font-body text-[10px] italic text-clutch-chocolate/55">
-                                    skip if you want.
-                                  </span>
-                                </div>
-                              </motion.div>
-                            ) : null}
-                          </AnimatePresence>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-
-                {/* RIGHT COLUMN — Mad libs (top) + Outfit of the Day (bottom) */}
-                <div className="md:col-span-5 flex flex-col gap-5">
-                  {/* BLOCK B — Mad libs */}
-                  <div
-                    className="relative border-[1.5px] border-dashed border-clutch-ink bg-clutch-paper paper-card p-5 shadow-paper"
-                    style={{ transform: "rotate(1deg)" }}
-                  >
-                    <FourPointStar
-                      size={14}
-                      color="#EB6E9E"
-                      className="sparkle-spin absolute -left-3 -top-3"
-                    />
-                    <FourPointStar
-                      size={10}
-                      color="#D6336C"
-                      className="sparkle-spin absolute -right-2 -top-2"
-                      style={{ animationDelay: "0.5s" }}
-                    />
-
-                    <p className="font-body text-[10px] uppercase tracking-[0.28em] text-clutch-hot">
-                      ❤ mad libs
-                    </p>
-                    <p className="mt-1.5 font-display italic text-[13px] text-clutch-chocolate/85">
-                      be specific. &ldquo;better UI&rdquo; doesn&rsquo;t help us
-                      build.
-                    </p>
-
-                    <p
-                      className="mt-3 font-body text-clutch-ink"
-                      style={{ fontSize: 16, lineHeight: 1.7 }}
+                  {step > 0 && (
+                    <button
+                      type="button"
+                      onClick={goPrev}
+                      className="font-body text-[12px] italic text-clutch-chocolate/60 transition hover:text-clutch-ink"
                     >
-                      &ldquo;I would use this every day if it had{" "}
-                      <MadLibBlank
-                        value={state.blanks.had}
-                        onChange={(v) => setBlank("had", v)}
-                        placeholder="________"
-                        width="11ch"
-                      />
-                      , skipped{" "}
-                      <MadLibBlank
-                        value={state.blanks.skipped}
-                        onChange={(v) => setBlank("skipped", v)}
-                        placeholder="________"
-                        width="11ch"
-                      />
-                      , and the dealbreaker would be{" "}
-                      <MadLibBlank
-                        value={state.blanks.dealbreaker}
-                        onChange={(v) => setBlank("dealbreaker", v)}
-                        placeholder="________"
-                        width="11ch"
-                      />
-                      .&rdquo;
-                    </p>
-
-                    <p className="mt-4 font-body text-[12px] italic text-clutch-chocolate/70">
-                      fill what you can. nothing required.
-                    </p>
-                  </div>
-
+                      ← back
+                    </button>
+                  )}
+                </div>
+                <div className="h-[2px] w-full overflow-hidden bg-clutch-ink/12" style={{ borderRadius: 1 }}>
+                  <motion.div
+                    className="h-full bg-clutch-hot"
+                    animate={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  />
                 </div>
               </div>
 
-              {/* BLOCK C — Send-it-in coupon, full width */}
-              <div className="relative mt-6">
-                <div
-                  className="relative border-[1.5px] border-dashed border-clutch-ink bg-clutch-softpink/40 paper-card p-5 shadow-paper sm:p-6"
-                  style={{ borderRadius: "3px" }}
-                >
-                  {/* Tape corners */}
-                  <span
-                    aria-hidden
-                    className="absolute -top-2 left-6 h-3 w-12 -rotate-6 bg-clutch-softpink/80 shadow-tape"
-                    style={{
-                      backgroundImage:
-                        "repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 3px, transparent 3px 7px)",
-                    }}
-                  />
-                  <span
-                    aria-hidden
-                    className="absolute -top-2 right-6 h-3 w-12 rotate-6 bg-clutch-softpink/80 shadow-tape"
-                    style={{
-                      backgroundImage:
-                        "repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 3px, transparent 3px 7px)",
-                    }}
-                  />
+              {/* Question card */}
+              <div
+                className="overflow-hidden border-[1.5px] border-clutch-ink bg-clutch-paper paper-card shadow-paper"
+                style={{ minHeight: 280 }}
+              >
+                <AnimatePresence mode="wait" custom={direction}>
+                  <motion.div
+                    key={step}
+                    custom={direction}
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    className="p-5 sm:p-6"
+                  >
+                    {renderStep()}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
 
-                  <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-                    <div className="flex items-center gap-3">
-                      <Scissors size={20} color="#1B1B1B" />
-                      <div>
-                        <p
-                          className="font-display italic text-clutch-ink"
-                          style={{ fontSize: 28, lineHeight: 1 }}
-                        >
-                          send it in
-                        </p>
-                        <p className="mt-0.5 font-body text-[12px] italic text-clutch-chocolate/80">
-                          we read every one.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      className="group inline-flex items-center gap-2 border-[1.5px] border-dashed border-clutch-hot bg-clutch-paper px-5 py-2.5 font-display italic text-clutch-ink shadow-paper transition hover:bg-clutch-hot hover:text-white"
-                      style={{ borderRadius: "2px", fontSize: 18 }}
-                    >
-                      <FourPointStar size={12} color="currentColor" />
-                      mail it
-                      <span aria-hidden>→</span>
-                    </button>
-                  </div>
-                </div>
+              {/* Navigation */}
+              <div className="mt-4 flex justify-end">
+                {step < TOTAL_STEPS - 1 ? (
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className="group inline-flex items-center gap-2 border-[1.5px] border-dashed border-clutch-hot bg-clutch-paper px-5 py-2.5 font-display italic text-clutch-ink shadow-paper transition hover:bg-clutch-hot hover:text-white"
+                    style={{ borderRadius: "2px", fontSize: 17 }}
+                  >
+                    <FourPointStar size={11} color="currentColor" />
+                    next
+                    <span aria-hidden>→</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    className="group inline-flex items-center gap-2 border-[1.5px] border-dashed border-clutch-hot bg-clutch-paper px-5 py-2.5 font-display italic text-clutch-ink shadow-paper transition hover:bg-clutch-hot hover:text-white"
+                    style={{ borderRadius: "2px", fontSize: 17 }}
+                  >
+                    <FourPointStar size={11} color="currentColor" />
+                    mail it
+                    <span aria-hidden>→</span>
+                  </button>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -462,10 +670,7 @@ export default function ReaderFeedback() {
                   </p>
                   <h3
                     className="font-script text-clutch-ink"
-                    style={{
-                      fontSize: "clamp(34px, 6.4vw, 52px)",
-                      lineHeight: 0.95,
-                    }}
+                    style={{ fontSize: "clamp(34px, 6.4vw, 52px)", lineHeight: 0.95 }}
                   >
                     noted.
                   </h3>
