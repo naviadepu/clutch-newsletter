@@ -205,6 +205,10 @@ export default function ReaderFeedback() {
 
   useEffect(() => {
     try {
+      // wipe all previous survey keys so stale submitted states never show
+      ["clutch_feedback_2026_05", "clutch_survey_2026_05_v2"].forEach((k) => {
+        window.localStorage.removeItem(k);
+      });
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
