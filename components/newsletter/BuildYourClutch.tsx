@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { postFeedback } from "@/lib/feedback-client";
 import {
   PixelHeart,
   SolidHeart,
@@ -244,6 +245,7 @@ export default function BuildYourClutch() {
   const [dealbreaker, setDealbreaker] = useState("");
   const [pulsingId, setPulsingId] = useState<string | null>(null);
   const hydrated = useRef(false);
+  const lastDraftSignature = useRef<string | null>(null);
 
   useEffect(() => {
     try {
@@ -297,6 +299,40 @@ export default function BuildYourClutch() {
   const pickedCards = picked
     .map((id) => CARDS.find((c) => c.id === id))
     .filter(Boolean) as Card[];
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+
+    const answers = {
+      kind: "deck",
+      picked_ids: pickedCards.map((card) => card.id),
+      picked_labels: pickedCards.map((card) => card.label),
+      top1_id: top1,
+      top1_label: pickedCards.find((card) => card.id === top1)?.label ?? null,
+      dealbreaker: dealbreaker.trim() || null,
+      savedAt: new Date().toISOString(),
+    };
+
+    const hasMeaningfulDraft =
+      answers.picked_ids.length > 0 || Boolean(answers.dealbreaker);
+    if (!hasMeaningfulDraft) return;
+
+    const nextSignature = JSON.stringify(answers);
+    if (lastDraftSignature.current === nextSignature) return;
+
+    const timeoutId = window.setTimeout(() => {
+      lastDraftSignature.current = nextSignature;
+      postFeedback({
+        answers,
+        responseKind: "deck",
+        status: "in_progress",
+      }).catch((error) => {
+        console.warn("deck draft post failed", error);
+      });
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [dealbreaker, pickedCards, top1]);
 
   return (
     <section className="relative mt-12 px-2 sm:px-4">

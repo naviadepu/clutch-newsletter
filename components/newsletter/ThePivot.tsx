@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { postFeedback } from "@/lib/feedback-client";
 import PhoneMockup from "./PhoneMockup";
 import { PixelHeart, FourPointStar } from "./decorations";
 
@@ -382,6 +383,7 @@ function PhoneSwap({ screen }: { screen: ScreenId }) {
 
 export default function ThePivot() {
   const [clarity, setClarity] = useState<string | null>(null);
+  const [clarityError, setClarityError] = useState<string | null>(null);
   const [screen, setScreen] = useState<ScreenId>("home");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -401,6 +403,26 @@ export default function ThePivot() {
   const handleFeature = (s: ScreenId) => {
     setScreen(s);
     startCycle();
+  };
+
+  const handleClarity = async (option: string) => {
+    setClarity(option);
+    setClarityError(null);
+
+    try {
+      await postFeedback({
+        answers: {
+          kind: "pivot-feedback",
+          clarity: option,
+          submittedAt: new Date().toISOString(),
+        },
+        responseKind: "pivot-feedback",
+        status: "submitted",
+      });
+    } catch (error) {
+      console.warn("pivot feedback post failed", error);
+      setClarityError("couldn’t save that yet. tap again to retry.");
+    }
   };
 
   return (
@@ -578,7 +600,7 @@ export default function ThePivot() {
                     type="button"
                     role="radio"
                     aria-checked={selected}
-                    onClick={() => setClarity(opt)}
+                    onClick={() => void handleClarity(opt)}
                     className={[
                       "border px-3 py-1.5 font-body text-[12px] tracking-wide transition",
                       selected
@@ -598,6 +620,11 @@ export default function ThePivot() {
                 style={{ fontSize: 28, lineHeight: 1 }}
               >
                 noted, thank you ♥
+              </p>
+            ) : null}
+            {clarityError ? (
+              <p className="mt-2 font-body text-[12px] italic text-clutch-hot">
+                ✦ {clarityError}
               </p>
             ) : null}
           </div>
