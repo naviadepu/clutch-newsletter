@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         await client.messages.create({
           to: phone,
           from: process.env.TWILIO_PHONE_NUMBER,
-          body: `Hey, it's Clutch! We got your feedback! You're on our list and in the loop of all the new things we will be doing! - Team Clutch`,
+          body: `we've got it, your feedback is in and you're on our list and in the loop of all the new things we will be doing!\n\n* team clutch`,
         });
       } catch (smsErr) {
         console.warn("[clutch:sms] failed", smsErr);
